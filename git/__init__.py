@@ -33,11 +33,18 @@ if not find_executable('git'):
     os.environ['GIT_EXEC_PATH'] = GIT_EXEC_PATH
     os.environ['LD_LIBRARY_PATH'] = LD_LIBRARY_PATH
 
+def clense_list(list):
+    for item in list:
+        if "@" in item and "https://" in item:
+            head, sep, tail = item.lstrip('https://').partition('@')
+            head2, sep2, tail2 = head.partition(':')
+            item = 'https://'+head2+':REDACTED@'+tail 
+    return(list)
 
 def exec_command(*args, **kwargs):
     options = dict({'cwd': '/tmp', 'env': os.environ}, **kwargs)
     command = ['git'] + list(args)
-    LOGGER.info('executing git command: "{}"'.format(' '.join(command)))
+    LOGGER.info('executing git command: "{}"'.format(' '.join(clense_list(command))))
     p = subprocess.Popen(command, stdout=subprocess.PIPE,
                          stderr=subprocess.PIPE, cwd=options['cwd'],
                          env=options['env'])
@@ -46,6 +53,6 @@ def exec_command(*args, **kwargs):
         LOGGER.error('git failed with {} returncode'.format(p.returncode))
         raise GitExecutionError(
             'command={} returncode={} stdout="{}" '
-            'stderr="{}"'.format(command, p.returncode, stdout, stderr)
+            'stderr="{}"'.format(clense_list(command), p.returncode, stdout, stderr)
         )
     return stdout, stderr
